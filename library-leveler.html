@@ -425,24 +425,33 @@
     <p>Saint Andrew's Episcopal School · Classroom Library Tool</p>
   </div>
 
-  <!-- Setup -->
+  <!-- Teacher selector -->
   <div class="section">
     <div class="setup-card">
       <div class="setup-header" onclick="toggleSetup()" id="setup-toggle">
         <div class="setup-header-left">
-          <span style="font-size:18px;">📋</span>
-          <span class="setup-title" id="setup-title">Connect Google Sheet</span>
+          <span style="font-size:18px;">👩‍🏫</span>
+          <span class="setup-title" id="setup-title">Who's scanning?</span>
         </div>
         <div style="display:flex;align-items:center;gap:10px;">
-          <div id="connected-pill" style="display:none;" class="connected-pill"><span class="dot"></span> Connected</div>
-          <span class="chevron" id="setup-chevron">›</span>
+          <div id="connected-pill" style="display:none;" class="connected-pill"><span class="dot"></span> <span id="active-teacher-name">Ready</span></div>
+          <span class="chevron" id="setup-chevron">‹</span>
         </div>
       </div>
       <div class="setup-body" id="setup-body">
-        <p>Paste your Google Apps Script Web App URL. Each scanned book will be sent directly to your sheet.</p>
-        <div class="input-row">
-          <input type="url" id="sheet-url" placeholder="https://script.google.com/macros/s/..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" />
-          <button class="btn-save" onclick="saveSheetUrl()">Save</button>
+        <p>Select your name. Each teacher's scans go to their own Google Sheet.</p>
+
+        <div id="teacher-list" style="display:flex;flex-direction:column;gap:8px;margin:12px 0 0;"></div>
+
+        <div style="margin-top:14px;border-top:1px solid var(--gray-100);padding-top:14px;">
+          <p style="margin:0 0 8px;">Add a teacher:</p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <input type="text" id="new-teacher-name" placeholder="Teacher name (e.g. Ms. Rivera)" autocorrect="off" spellcheck="false"
+              style="font-size:14px;font-family:'DM Sans',sans-serif;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:var(--gray-50);color:var(--gray-900);outline:none;-webkit-appearance:none;" />
+            <input type="url" id="new-teacher-url" placeholder="Apps Script Web App URL" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+              style="font-size:14px;font-family:'DM Sans',sans-serif;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:var(--gray-50);color:var(--gray-900);outline:none;-webkit-appearance:none;" />
+            <button class="btn-save" onclick="addTeacher()" style="align-self:flex-start;padding:10px 20px;">Add teacher</button>
+          </div>
         </div>
       </div>
     </div>
@@ -593,21 +602,31 @@
   let codeReader = null;
   let currentBook = null;
   let sessionBooks = [];
-  let sheetUrl = localStorage.getItem('sae_sheet_url') || '';
-  let setupOpen = !sheetUrl;
+  let activeTeacher = null; // { name, url }
+  let setupOpen = true;
+
+  // Teachers stored as array: [{ name, url }, ...]
+  function getTeachers() {
+    try { return JSON.parse(localStorage.getItem('sae_teachers') || '[]'); } catch(e) { return []; }
+  }
+  function saveTeachers(arr) {
+    localStorage.setItem('sae_teachers', JSON.stringify(arr));
+  }
 
   // ── Init ──
   function init() {
-    if (sheetUrl) {
-      document.getElementById('sheet-url').value = sheetUrl;
-      showConnectedState();
+    const teachers = getTeachers();
+    // Restore last active teacher
+    const lastName = localStorage.getItem('sae_active_teacher');
+    if (lastName) {
+      const found = teachers.find(t => t.name === lastName);
+      if (found) { activeTeacher = found; setupOpen = false; }
     }
+    renderTeacherList();
     if (!setupOpen) {
       document.getElementById('setup-body').style.display = 'none';
       document.getElementById('setup-chevron').textContent = '›';
-    } else {
-      document.getElementById('setup-body').style.display = 'block';
-      document.getElementById('setup-chevron').textContent = '‹';
+      showConnectedState();
     }
   }
 
@@ -618,21 +637,73 @@
     document.getElementById('setup-chevron').textContent = setupOpen ? '‹' : '›';
   }
 
-  function saveSheetUrl() {
-    const val = document.getElementById('sheet-url').value.trim();
-    if (!val || !val.startsWith('http')) { showStatus('Please enter a valid URL.', 'error'); return; }
-    sheetUrl = val;
-    localStorage.setItem('sae_sheet_url', val);
+  function addTeacher() {
+    const name = document.getElementById('new-teacher-name').value.trim();
+    const url = document.getElementById('new-teacher-url').value.trim();
+    if (!name) { showStatus('Please enter a teacher name.', 'error'); return; }
+    if (!url || !url.startsWith('http')) { showStatus('Please enter a valid Apps Script URL.', 'error'); return; }
+    const teachers = getTeachers();
+    if (teachers.find(t => t.name === name)) { showStatus('That name already exists. Delete it first to update.', 'error'); return; }
+    teachers.push({ name, url });
+    saveTeachers(teachers);
+    document.getElementById('new-teacher-name').value = '';
+    document.getElementById('new-teacher-url').value = '';
+    renderTeacherList();
+    showStatus(name + ' added!', 'success');
+  }
+
+  function removeTeacher(name) {
+    let teachers = getTeachers().filter(t => t.name !== name);
+    saveTeachers(teachers);
+    if (activeTeacher && activeTeacher.name === name) {
+      activeTeacher = null;
+      localStorage.removeItem('sae_active_teacher');
+      document.getElementById('connected-pill').style.display = 'none';
+      document.getElementById('setup-title').textContent = 'Who\'s scanning?';
+    }
+    renderTeacherList();
+  }
+
+  function selectTeacher(name) {
+    const teachers = getTeachers();
+    const found = teachers.find(t => t.name === name);
+    if (!found) return;
+    activeTeacher = found;
+    localStorage.setItem('sae_active_teacher', name);
     showConnectedState();
     setupOpen = false;
     document.getElementById('setup-body').style.display = 'none';
     document.getElementById('setup-chevron').textContent = '›';
-    showStatus('Google Sheet connected!', 'success');
+    showStatus('Scanning as ' + name, 'success');
+    sessionBooks = [];
+    document.getElementById('recent-section').style.display = 'none';
+  }
+
+  function renderTeacherList() {
+    const teachers = getTeachers();
+    const container = document.getElementById('teacher-list');
+    if (teachers.length === 0) {
+      container.innerHTML = '<p style="font-size:13px;color:var(--gray-500);">No teachers added yet. Add one below.</p>';
+      return;
+    }
+    container.innerHTML = teachers.map(t => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:${activeTeacher && activeTeacher.name === t.name ? 'var(--green-50)' : 'var(--gray-50)'};border:1px solid ${activeTeacher && activeTeacher.name === t.name ? 'var(--green-600)' : 'var(--gray-200)'};border-radius:var(--radius-sm);padding:10px 14px;">
+        <div>
+          <div style="font-size:14px;font-weight:500;color:var(--gray-900);">${escHtml(t.name)}</div>
+          <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">Sheet connected</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="selectTeacher('${escHtml(t.name)}')" style="font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;padding:6px 14px;border-radius:var(--radius-sm);border:none;background:var(--green-800);color:#fff;cursor:pointer;">Select</button>
+          <button onclick="removeTeacher('${escHtml(t.name)}')" style="font-size:13px;font-family:'DM Sans',sans-serif;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:#fff;color:var(--gray-500);cursor:pointer;">✕</button>
+        </div>
+      </div>
+    `).join('');
   }
 
   function showConnectedState() {
     document.getElementById('connected-pill').style.display = 'inline-flex';
-    document.getElementById('setup-title').textContent = 'Google Sheet';
+    document.getElementById('active-teacher-name').textContent = activeTeacher ? activeTeacher.name : 'Ready';
+    document.getElementById('setup-title').textContent = 'Teacher';
   }
 
   // ── Camera ──
@@ -820,8 +891,8 @@
     const genre = document.getElementById('genre-select').value || currentBook.genre;
     const btn = document.getElementById('add-btn');
 
-    if (!sheetUrl) {
-      showStatus('Please connect a Google Sheet first using the setup above.', 'error');
+    if (!activeTeacher) {
+      showStatus('Please select your name at the top before saving.', 'error');
       setupOpen = false; toggleSetup();
       return;
     }
@@ -837,11 +908,12 @@
       genre,
       pages: currentBook.pages,
       year: currentBook.year,
+      teacher: activeTeacher.name,
       timestamp: new Date().toLocaleString('en-US')
     };
 
     try {
-      await fetch(sheetUrl, {
+      await fetch(activeTeacher.url, {
         method: 'POST',
         mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
