@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Library Leveler — Saint Andrew's Episcopal School</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@zxing/library@0.21.1/umd/index.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-50: #EAF3DE;
+    --green-600: #3B6D11;
+    --green-800: #27500A;
+    --blue-50: #E6F1FB;
+    --blue-600: #185FA5;
+    --blue-800: #0C447C;
+    --amber-50: #FAEEDA;
+    --amber-600: #854F0B;
+    --red-50: #FCEBEB;
+    --red-600: #A32D2D;
+    --gray-50: #F6F5F0;
+    --gray-100: #EDECEA;
+    --gray-200: #D3D1C7;
+    --gray-500: #888780;
+    --gray-700: #444441;
+    --gray-900: #1a1a18;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+  }
+
+  html, body {
+    height: 100%;
+    background: var(--gray-50);
+    font-family: 'DM Sans', sans-serif;
+    color: var(--gray-900);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 0 80px;
+    min-height: 100vh;
+  }
+
+  /* Header */
+  .header {
+    background: #fff;
+    border-bottom: 1px solid var(--gray-100);
+    padding: 20px 20px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .header-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 4px;
+  }
+  .logo-mark {
+    width: 36px;
+    height: 36px;
+    background: var(--green-800);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .logo-mark svg { width: 20px; height: 20px; fill: none; stroke: #fff; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .header h1 { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; color: var(--gray-900); line-height: 1.1; }
+  .header p { font-size: 12px; color: var(--gray-500); margin-left: 48px; }
+
+  /* Sections */
+  .section { margin: 16px 16px 0; }
+
+  /* Setup card */
+  .setup-card {
+    background: #fff;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-100);
+    overflow: hidden;
+  }
+  .setup-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .setup-header-left { display: flex; align-items: center; gap: 10px; }
+  .setup-title { font-size: 14px; font-weight: 500; }
+  .setup-body { padding: 0 16px 16px; border-top: 1px solid var(--gray-100); }
+  .setup-body p { font-size: 13px; color: var(--gray-500); line-height: 1.6; margin: 12px 0 10px; }
+  .input-row { display: flex; gap: 8px; }
+  .input-row input {
+    flex: 1;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    color: var(--gray-900);
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .input-row input:focus { border-color: var(--green-600); background: #fff; }
+  .btn-save {
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--green-800);
+    color: #fff;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-save:active { opacity: 0.85; }
+
+  .connected-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: var(--green-50);
+    color: var(--green-600);
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 99px;
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green-600); }
+  .chevron { font-size: 18px; color: var(--gray-500); transition: transform 0.2s; }
+  .chevron.open { transform: rotate(180deg); }
+
+  /* Scanner */
+  .scanner-card {
+    background: #fff;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-100);
+    overflow: hidden;
+  }
+
+  .video-wrap {
+    position: relative;
+    background: #111;
+    width: 100%;
+    aspect-ratio: 4/3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .video-wrap video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+  .video-wrap video.active { display: block; }
+
+  .scan-ui {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    pointer-events: none;
+  }
+  .scan-frame-wrap {
+    width: 72%;
+    max-width: 260px;
+    position: relative;
+  }
+  .scan-frame {
+    border: 2px solid rgba(255,255,255,0.7);
+    border-radius: 10px;
+    aspect-ratio: 3/1;
+    position: relative;
+    overflow: hidden;
+  }
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.9), transparent);
+    animation: scanline 2s ease-in-out infinite;
+  }
+  @keyframes scanline { 0%,100% { top: 8px; } 50% { top: calc(100% - 10px); } }
+
+  .corner { position: absolute; width: 16px; height: 16px; }
+  .corner-tl { top: -2px; left: -2px; border-top: 3px solid #fff; border-left: 3px solid #fff; border-radius: 4px 0 0 0; }
+  .corner-tr { top: -2px; right: -2px; border-top: 3px solid #fff; border-right: 3px solid #fff; border-radius: 0 4px 0 0; }
+  .corner-bl { bottom: -2px; left: -2px; border-bottom: 3px solid #fff; border-left: 3px solid #fff; border-radius: 0 0 0 4px; }
+  .corner-br { bottom: -2px; right: -2px; border-bottom: 3px solid #fff; border-right: 3px solid #fff; border-radius: 0 0 4px 0; }
+
+  .scan-hint { font-size: 13px; color: rgba(255,255,255,0.7); letter-spacing: 0.02em; }
+
+  .idle-state { text-align: center; }
+  .idle-icon { font-size: 52px; line-height: 1; margin-bottom: 10px; }
+  .idle-text { font-size: 14px; color: rgba(255,255,255,0.5); }
+
+  .scanner-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--gray-100);
+    border-top: 1px solid var(--gray-100);
+  }
+  .scanner-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px;
+    background: #fff;
+    border: none;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    color: var(--gray-700);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .scanner-btn:active { background: var(--gray-50); }
+  .scanner-btn.primary { color: var(--green-600); }
+  .scanner-btn.active { background: var(--green-50); color: var(--green-800); }
+  .btn-icon { font-size: 20px; }
+
+  /* Manual entry */
+  .manual-entry {
+    border-top: 1px solid var(--gray-100);
+    padding: 12px 16px;
+    display: none;
+    gap: 8px;
+  }
+  .manual-entry.show { display: flex; }
+  .manual-entry input {
+    flex: 1;
+    font-size: 16px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 12px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    color: var(--gray-900);
+    outline: none;
+    -webkit-appearance: none;
+  }
+  .manual-entry input:focus { border-color: var(--blue-600); background: #fff; }
+  .btn-lookup {
+    padding: 12px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: var(--blue-800);
+    color: #fff;
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn-lookup:active { opacity: 0.85; }
+
+  /* Status */
+  .status-bar {
+    margin: 12px 16px 0;
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 500;
+    display: none;
+  }
+  .status-bar.success { background: var(--green-50); color: var(--green-600); display: block; }
+  .status-bar.error { background: var(--red-50); color: var(--red-600); display: block; }
+  .status-bar.info { background: var(--blue-50); color: var(--blue-600); display: block; }
+
+  /* Result card */
+  .result-card {
+    background: #fff;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-100);
+    overflow: hidden;
+    display: none;
+  }
+  .result-card.show { display: block; }
+
+  .result-header { padding: 16px 16px 12px; border-bottom: 1px solid var(--gray-100); }
+  .book-title { font-family: 'DM Serif Display', serif; font-size: 18px; font-weight: 400; color: var(--gray-900); line-height: 1.3; margin-bottom: 3px; }
+  .book-author { font-size: 13px; color: var(--gray-500); }
+
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--gray-100); border-bottom: 1px solid var(--gray-100); }
+  .meta-cell { background: #fff; padding: 12px 14px; }
+  .meta-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-500); margin-bottom: 4px; font-weight: 500; }
+  .meta-value { font-size: 16px; font-weight: 600; }
+  .meta-value.level { color: var(--blue-600); }
+  .meta-value.genre { color: var(--green-600); }
+  .meta-value.plain { color: var(--gray-700); font-size: 15px; }
+
+  .result-edit { padding: 14px 16px; border-bottom: 1px solid var(--gray-100); }
+  .edit-label { font-size: 12px; color: var(--gray-500); margin-bottom: 8px; }
+  .edit-selects { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .edit-selects select {
+    font-size: 14px;
+    font-family: 'DM Sans', sans-serif;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--gray-200);
+    background: var(--gray-50);
+    color: var(--gray-900);
+    outline: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888780' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+  }
+
+  .result-action { padding: 14px 16px; }
+  .btn-add {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 15px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--green-800);
+    color: #fff;
+    font-size: 15px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.01em;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s;
+  }
+  .btn-add:active { opacity: 0.85; }
+  .btn-add:disabled { background: var(--gray-200); color: var(--gray-500); cursor: not-allowed; }
+
+  /* Loading spinner */
+  .loading-card {
+    background: #fff;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-100);
+    padding: 32px;
+    text-align: center;
+    display: none;
+  }
+  .loading-card.show { display: block; }
+  .spinner {
+    width: 32px; height: 32px;
+    border: 3px solid var(--gray-100);
+    border-top-color: var(--green-600);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--gray-500); }
+
+  /* Recent list */
+  .recent-heading {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--gray-500);
+    font-weight: 600;
+    padding: 0 4px;
+    margin-bottom: 8px;
+  }
+  .recent-list { display: flex; flex-direction: column; gap: 6px; }
+  .recent-item {
+    background: #fff;
+    border: 1px solid var(--gray-100);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .recent-title { font-size: 13px; font-weight: 500; color: var(--gray-900); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .recent-sub { font-size: 12px; color: var(--gray-500); }
+  .level-badge { flex-shrink: 0; font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: var(--blue-50); color: var(--blue-600); white-space: nowrap; }
+
+  /* Count bar */
+  .count-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--gray-100);
+    border-radius: 99px;
+    padding: 6px 14px;
+    margin-bottom: 4px;
+  }
+  .count-bar span { font-size: 13px; color: var(--gray-500); }
+  .count-bar strong { font-size: 13px; font-weight: 600; color: var(--gray-900); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      </div>
+      <h1>Library Leveler</h1>
+    </div>
+    <p>Saint Andrew's Episcopal School · Classroom Library Tool</p>
+  </div>
+
+  <!-- Teacher selector -->
+  <div class="section">
+    <div class="setup-card">
+      <div class="setup-header" onclick="toggleSetup()" id="setup-toggle">
+        <div class="setup-header-left">
+          <span style="font-size:18px;">👩‍🏫</span>
+          <span class="setup-title" id="setup-title">Who's scanning?</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div id="connected-pill" style="display:none;" class="connected-pill"><span class="dot"></span> <span id="active-teacher-name">Ready</span></div>
+          <span class="chevron" id="setup-chevron">‹</span>
+        </div>
+      </div>
+      <div class="setup-body" id="setup-body">
+        <p>Select your name. Each teacher's scans go to their own Google Sheet.</p>
+
+        <div id="teacher-list" style="display:flex;flex-direction:column;gap:8px;margin:12px 0 0;"></div>
+
+        <div style="margin-top:14px;border-top:1px solid var(--gray-100);padding-top:14px;">
+          <p style="margin:0 0 8px;">Add a teacher:</p>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <input type="text" id="new-teacher-name" placeholder="Teacher name (e.g. Ms. Rivera)" autocorrect="off" spellcheck="false"
+              style="font-size:14px;font-family:'DM Sans',sans-serif;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:var(--gray-50);color:var(--gray-900);outline:none;-webkit-appearance:none;" />
+            <input type="url" id="new-teacher-url" placeholder="Apps Script Web App URL" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"
+              style="font-size:14px;font-family:'DM Sans',sans-serif;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:var(--gray-50);color:var(--gray-900);outline:none;-webkit-appearance:none;" />
+            <button class="btn-save" onclick="addTeacher()" style="align-self:flex-start;padding:10px 20px;">Add teacher</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scanner -->
+  <div class="section">
+    <div class="scanner-card">
+      <div class="video-wrap" id="video-wrap">
+        <video id="video" playsinline webkit-playsinline></video>
+        <div class="scan-ui" id="scan-ui">
+          <div class="idle-state" id="idle-state">
+            <div class="idle-icon">📚</div>
+            <div class="idle-text">Tap "Start scanning" below</div>
+          </div>
+          <div id="active-scan-ui" style="display:none; flex-direction:column; align-items:center; gap:12px;">
+            <div class="scan-frame-wrap">
+              <div class="scan-frame">
+                <div class="scan-line"></div>
+                <div class="corner corner-tl"></div>
+                <div class="corner corner-tr"></div>
+                <div class="corner corner-bl"></div>
+                <div class="corner corner-br"></div>
+              </div>
+            </div>
+            <div class="scan-hint">Hold barcode inside the frame</div>
+          </div>
+        </div>
+      </div>
+      <div class="scanner-buttons">
+        <button class="scanner-btn primary" id="cam-btn" onclick="toggleCamera()">
+          <span class="btn-icon">📷</span> Start scanning
+        </button>
+        <button class="scanner-btn" id="manual-btn" onclick="toggleManual()">
+          <span class="btn-icon">⌨️</span> Enter ISBN
+        </button>
+      </div>
+      <div class="manual-entry" id="manual-entry">
+        <input type="tel" id="isbn-input" placeholder="Enter 10 or 13-digit ISBN" maxlength="17" inputmode="numeric" />
+        <button class="btn-lookup" onclick="lookupISBN()">Look up</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div id="status-bar" class="status-bar"></div>
+
+  <!-- Loading -->
+  <div class="section">
+    <div class="loading-card" id="loading-card">
+      <div class="spinner"></div>
+      <div class="loading-text">Looking up book…</div>
+    </div>  </div>
+
+  <!-- Result -->
+  <div class="section">
+    <div class="result-card" id="result-card">
+      <div class="result-header">
+        <div class="book-title" id="book-title"></div>
+        <div class="book-author" id="book-author"></div>
+      </div>
+      <div class="meta-grid">
+        <div class="meta-cell">
+          <div class="meta-label">Reading level</div>
+          <div class="meta-value level" id="book-level">—</div>
+        </div>
+        <div class="meta-cell">
+          <div class="meta-label">Genre</div>
+          <div class="meta-value genre" id="book-genre">—</div>
+        </div>
+        <div class="meta-cell">
+          <div class="meta-label">Pages</div>
+          <div class="meta-value plain" id="book-pages">—</div>
+        </div>
+        <div class="meta-cell">
+          <div class="meta-label">Published</div>
+          <div class="meta-value plain" id="book-year">—</div>
+        </div>
+      </div>
+      <div class="result-edit">
+        <div id="confidence-note" style="display:none; font-size:12px; background:var(--amber-50); color:var(--amber-600); padding:8px 10px; border-radius:var(--radius-sm); margin-bottom:10px;">⚠️ Level estimated — please confirm before saving.</div>
+        <div class="edit-label">Confirm or adjust before saving:</div>
+        <div class="edit-selects">
+          <select id="level-select" aria-label="Reading level">
+            <option value="">— Level —</option>
+            <optgroup label="Guided Reading">
+              <option>A</option><option>B</option><option>C</option><option>D</option><option>E</option>
+              <option>F</option><option>G</option><option>H</option><option>I</option><option>J</option>
+              <option>K</option><option>L</option><option>M</option><option>N</option><option>O</option>
+              <option>P</option><option>Q</option><option>R</option><option>S</option><option>T</option>
+              <option>U</option><option>V</option><option>W</option><option>X</option><option>Y</option><option>Z</option>
+            </optgroup>
+            <optgroup label="Lexile Range">
+              <option>BR (Below 0L)</option><option>0–200L</option><option>200–400L</option>
+              <option>400–600L</option><option>600–800L</option><option>800–1000L</option><option>1000L+</option>
+            </optgroup>
+            <optgroup label="DRA">
+              <option>DRA 1–2</option><option>DRA 3–4</option><option>DRA 6–8</option>
+              <option>DRA 10–12</option><option>DRA 14–16</option><option>DRA 18–20</option>
+              <option>DRA 24–28</option><option>DRA 30–34</option><option>DRA 38–40</option><option>DRA 44+</option>
+            </optgroup>
+          </select>
+          <select id="genre-select" aria-label="Genre">
+            <option value="">— Genre —</option>
+            <option>Fiction</option>
+            <option>Realistic Fiction</option>
+            <option>Historical Fiction</option>
+            <option>Fantasy</option>
+            <option>Science Fiction</option>
+            <option>Mystery</option>
+            <option>Adventure</option>
+            <option>Humor</option>
+            <option>Graphic Novel</option>
+            <option>Nonfiction</option>
+            <option>Biography / Memoir</option>
+            <option>Informational</option>
+            <option>Science &amp; Nature</option>
+            <option>Social Studies</option>
+            <option>Poetry</option>
+            <option>Folktale / Mythology</option>
+            <option>Picture Book</option>
+            <option>Early Reader</option>
+          </select>
+        </div>
+      </div>
+      <div class="result-action">
+        <button class="btn-add" id="add-btn" onclick="addToSheet()">
+          ＋ Add to Google Sheet
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent -->
+  <div class="section" id="recent-section" style="display:none;">
+    <div class="count-bar">
+      <span>Books scanned this session</span>
+      <strong id="session-count">0</strong>
+    </div>
+    <div class="recent-list" id="recent-list"></div>
+  </div>
+
+</div>
+
+<script>
+  // ── State ──
+  let cameraActive = false;
+  let codeReader = null;
+  let currentBook = null;
+  let sessionBooks = [];
+  let activeTeacher = null; // { name, url }
+  let setupOpen = true;
+
+  // Teachers stored as array: [{ name, url }, ...]
+  function getTeachers() {
+    try { return JSON.parse(localStorage.getItem('sae_teachers') || '[]'); } catch(e) { return []; }
+  }
+  function saveTeachers(arr) {
+    localStorage.setItem('sae_teachers', JSON.stringify(arr));
+  }
+
+  // ── Init ──
+  function init() {
+    const teachers = getTeachers();
+    // Restore last active teacher
+    const lastName = localStorage.getItem('sae_active_teacher');
+    if (lastName) {
+      const found = teachers.find(t => t.name === lastName);
+      if (found) { activeTeacher = found; setupOpen = false; }
+    }
+    renderTeacherList();
+    if (!setupOpen) {
+      document.getElementById('setup-body').style.display = 'none';
+      document.getElementById('setup-chevron').textContent = '›';
+      showConnectedState();
+    }
+  }
+
+  // ── Setup ──
+  function toggleSetup() {
+    setupOpen = !setupOpen;
+    document.getElementById('setup-body').style.display = setupOpen ? 'block' : 'none';
+    document.getElementById('setup-chevron').textContent = setupOpen ? '‹' : '›';
+  }
+
+  function addTeacher() {
+    const name = document.getElementById('new-teacher-name').value.trim();
+    const url = document.getElementById('new-teacher-url').value.trim();
+    if (!name) { showStatus('Please enter a teacher name.', 'error'); return; }
+    if (!url || !url.startsWith('http')) { showStatus('Please enter a valid Apps Script URL.', 'error'); return; }
+    const teachers = getTeachers();
+    if (teachers.find(t => t.name === name)) { showStatus('That name already exists. Delete it first to update.', 'error'); return; }
+    teachers.push({ name, url });
+    saveTeachers(teachers);
+    document.getElementById('new-teacher-name').value = '';
+    document.getElementById('new-teacher-url').value = '';
+    renderTeacherList();
+    showStatus(name + ' added!', 'success');
+  }
+
+  function removeTeacher(name) {
+    let teachers = getTeachers().filter(t => t.name !== name);
+    saveTeachers(teachers);
+    if (activeTeacher && activeTeacher.name === name) {
+      activeTeacher = null;
+      localStorage.removeItem('sae_active_teacher');
+      document.getElementById('connected-pill').style.display = 'none';
+      document.getElementById('setup-title').textContent = 'Who\'s scanning?';
+    }
+    renderTeacherList();
+  }
+
+  function selectTeacher(name) {
+    const teachers = getTeachers();
+    const found = teachers.find(t => t.name === name);
+    if (!found) return;
+    activeTeacher = found;
+    localStorage.setItem('sae_active_teacher', name);
+    showConnectedState();
+    setupOpen = false;
+    document.getElementById('setup-body').style.display = 'none';
+    document.getElementById('setup-chevron').textContent = '›';
+    showStatus('Scanning as ' + name, 'success');
+    sessionBooks = [];
+    document.getElementById('recent-section').style.display = 'none';
+  }
+
+  function renderTeacherList() {
+    const teachers = getTeachers();
+    const container = document.getElementById('teacher-list');
+    if (teachers.length === 0) {
+      container.innerHTML = '<p style="font-size:13px;color:var(--gray-500);">No teachers added yet. Add one below.</p>';
+      return;
+    }
+    container.innerHTML = teachers.map(t => `
+      <div style="display:flex;align-items:center;justify-content:space-between;background:${activeTeacher && activeTeacher.name === t.name ? 'var(--green-50)' : 'var(--gray-50)'};border:1px solid ${activeTeacher && activeTeacher.name === t.name ? 'var(--green-600)' : 'var(--gray-200)'};border-radius:var(--radius-sm);padding:10px 14px;">
+        <div>
+          <div style="font-size:14px;font-weight:500;color:var(--gray-900);">${escHtml(t.name)}</div>
+          <div style="font-size:11px;color:var(--gray-500);margin-top:2px;">Sheet connected</div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="selectTeacher('${escHtml(t.name)}')" style="font-size:13px;font-family:'DM Sans',sans-serif;font-weight:600;padding:6px 14px;border-radius:var(--radius-sm);border:none;background:var(--green-800);color:#fff;cursor:pointer;">Select</button>
+          <button onclick="removeTeacher('${escHtml(t.name)}')" style="font-size:13px;font-family:'DM Sans',sans-serif;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--gray-200);background:#fff;color:var(--gray-500);cursor:pointer;">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function showConnectedState() {
+    document.getElementById('connected-pill').style.display = 'inline-flex';
+    document.getElementById('active-teacher-name').textContent = activeTeacher ? activeTeacher.name : 'Ready';
+    document.getElementById('setup-title').textContent = 'Teacher';
+  }
+
+  // ── Camera ──
+  async function toggleCamera() {
+    if (cameraActive) { stopCamera(); return; }
+
+    const btn = document.getElementById('cam-btn');
+    btn.textContent = '⏳ Starting camera…';
+
+    try {
+      const constraints = {
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      const video = document.getElementById('video');
+      video.srcObject = stream;
+      await video.play();
+      video.classList.add('active');
+
+      document.getElementById('idle-state').style.display = 'none';
+      document.getElementById('active-scan-ui').style.display = 'flex';
+      btn.innerHTML = '⏹ Stop camera';
+      btn.classList.add('active');
+      cameraActive = true;
+      hideStatus();
+
+      if (window.ZXing) {
+        codeReader = new ZXing.BrowserMultiFormatReader();
+        const hints = new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [
+          ZXing.BarcodeFormat.EAN_13,
+          ZXing.BarcodeFormat.EAN_8,
+          ZXing.BarcodeFormat.UPC_A,
+          ZXing.BarcodeFormat.UPC_E
+        ]);
+        codeReader.hints = hints;
+        codeReader.timeBetweenDecodingAttempts = 300;
+
+        codeReader.decodeFromVideoDevice(null, 'video', (result, err) => {
+          if (result) {
+            const raw = result.getText().replace(/[^0-9X]/gi, '');
+            if (raw.length === 10 || raw.length === 13) {
+              stopCamera();
+              lookupISBNCode(raw);
+            }
+          }
+        });
+      }
+    } catch (err) {
+      stopCamera();
+      if (err.name === 'NotAllowedError') {
+        showStatus('Camera permission denied. Go to Settings → Safari → Camera → Allow, then reload.', 'error');
+      } else {
+        showStatus('Camera unavailable. Use "Enter ISBN" to type it manually.', 'error');
+        toggleManual();
+      }
+    }
+  }
+
+  function stopCamera() {
+    const video = document.getElementById('video');
+    if (video.srcObject) { video.srcObject.getTracks().forEach(t => t.stop()); video.srcObject = null; }
+    if (codeReader) { try { codeReader.reset(); } catch(e) {} codeReader = null; }
+    video.classList.remove('active');
+    document.getElementById('idle-state').style.display = 'block';
+    document.getElementById('active-scan-ui').style.display = 'none';
+    const btn = document.getElementById('cam-btn');
+    btn.innerHTML = '📷 Start scanning';
+    btn.classList.remove('active');
+    cameraActive = false;
+  }
+
+  // ── Manual entry ──
+  function toggleManual() {
+    const area = document.getElementById('manual-entry');
+    const isOpen = area.classList.toggle('show');
+    document.getElementById('manual-btn').classList.toggle('active', isOpen);
+    if (isOpen) document.getElementById('isbn-input').focus();
+  }
+
+  function lookupISBN() {
+    const val = document.getElementById('isbn-input').value.replace(/[^0-9X]/gi, '');
+    if (val.length < 10) { showStatus('Please enter a 10 or 13-digit ISBN.', 'error'); return; }
+    lookupISBNCode(val);
+  }
+
+  // ── Book lookup ──
+  async function lookupISBNCode(isbn) {
+    document.getElementById('result-card').classList.remove('show');
+    document.getElementById('loading-card').classList.add('show');
+    document.getElementById('loading-card').querySelector('.loading-text').textContent = 'Looking up book…';
+    hideStatus();
+
+    try {
+      // Step 1: Get book metadata from Open Library
+      const res = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${isbn}&format=json&jscmd=data`);
+      const data = await res.json();
+      const key = `ISBN:${isbn}`;
+
+      if (!data[key]) {
+        document.getElementById('loading-card').classList.remove('show');
+        showStatus('Book not found in Open Library. You can enter details manually in the sheet.', 'error');
+        return;
+      }
+
+      const book = data[key];
+      const title = book.title || 'Unknown title';
+      const author = book.authors ? book.authors.map(a => a.name).join(', ') : 'Unknown author';
+      const pages = book.number_of_pages || null;
+      const year = book.publish_date || '—';
+      const subjects = book.subjects ? book.subjects.map(s => typeof s === 'string' ? s : s.name).join(', ') : '';
+
+      // Step 2: Ask Claude for guided reading level and genre
+      document.getElementById('loading-card').querySelector('.loading-text').textContent = 'Getting reading level…';
+      const { level, genre, confident } = await getAILevel(title, author, pages, subjects);
+
+      document.getElementById('loading-card').classList.remove('show');
+
+      currentBook = { isbn, title, author, genre, level, pages: pages || '—', year };
+
+      document.getElementById('book-title').textContent = title;
+      document.getElementById('book-author').textContent = author;
+      document.getElementById('book-level').textContent = level;
+      document.getElementById('book-genre').textContent = genre;
+      document.getElementById('book-pages').textContent = pages ? pages + ' pp.' : '—';
+      document.getElementById('book-year').textContent = year;
+
+      // Show confidence note if uncertain
+      const confidenceNote = document.getElementById('confidence-note');
+      if (!confident) {
+        confidenceNote.style.display = 'block';
+      } else {
+        confidenceNote.style.display = 'none';
+      }
+
+      setSelectValue('level-select', level);
+      setSelectValue('genre-select', genre);
+
+      document.getElementById('result-card').classList.add('show');
+      document.getElementById('result-card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (e) {
+      document.getElementById('loading-card').classList.remove('show');
+      showStatus('Network error. Check your connection and try again.', 'error');
+    }
+  }
+
+  // ── Claude AI leveling ──
+  async function getAILevel(title, author, pages, subjects) {
+    try {
+      const prompt = `You are a K-8 reading specialist. Given the following book information, return the Guided Reading Level (A-Z) and genre.
+
+Title: ${title}
+Author: ${author}
+Pages: ${pages || 'unknown'}
+Subjects/Tags: ${subjects || 'unknown'}
+
+If you recognize this specific book, use its known Guided Reading level. If you don't recognize it, make your best estimate based on the available information.
+
+Respond ONLY with a JSON object in this exact format, no other text:
+{"level":"M","genre":"Fantasy","confident":true}
+
+For level: use a single letter A through Z.
+For genre: use one of these exactly: Fiction, Realistic Fiction, Historical Fiction, Fantasy, Science Fiction, Mystery, Adventure, Humor, Graphic Novel, Nonfiction, Biography / Memoir, Informational, Science & Nature, Social Studies, Poetry, Folktale / Mythology, Picture Book, Early Reader
+For confident: true if you recognize the specific book and know its level, false if you are estimating.`;
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 100,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const aiData = await response.json();
+      const text = aiData.content?.[0]?.text || '';
+      const clean = text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+
+      return {
+        level: parsed.level || 'M',
+        genre: parsed.genre || 'Fiction',
+        confident: parsed.confident !== false
+      };
+    } catch (e) {
+      // Fall back to heuristic if AI fails
+      return { level: fallbackLevel(pages), genre: 'Fiction', confident: false };
+    }
+  }
+
+  function fallbackLevel(pages) {
+    if (!pages) return 'M';
+    const p = parseInt(pages) || 0;
+    if (p < 24) return 'C';
+    if (p < 48) return 'F';
+    if (p < 80) return 'J';
+    if (p < 120) return 'M';
+    if (p < 180) return 'P';
+    if (p < 260) return 'S';
+    return 'V';
+  }
+
+  function setSelectValue(id, value) {
+    const sel = document.getElementById(id);
+    for (let opt of sel.options) {
+      if (opt.value === value || opt.text === value) { sel.value = opt.value; return; }
+    }
+  }
+
+  // ── Add to sheet ──
+  async function addToSheet() {
+    if (!currentBook) return;
+
+    const level = document.getElementById('level-select').value || currentBook.level;
+    const genre = document.getElementById('genre-select').value || currentBook.genre;
+    const btn = document.getElementById('add-btn');
+
+    if (!activeTeacher) {
+      showStatus('Please select your name at the top before saving.', 'error');
+      setupOpen = false; toggleSetup();
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = '⏳ Saving…';
+
+    const payload = {
+      isbn: currentBook.isbn,
+      title: currentBook.title,
+      author: currentBook.author,
+      level,
+      genre,
+      pages: currentBook.pages,
+      year: currentBook.year,
+      teacher: activeTeacher.name,
+      timestamp: new Date().toLocaleString('en-US')
+    };
+
+    try {
+      await fetch(activeTeacher.url, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) { /* no-cors means we can't read response, that's ok */ }
+
+    // Optimistic success
+    sessionBooks.unshift({ title: currentBook.title, author: currentBook.author, level, genre });
+    updateRecentList();
+    showStatus('✓ "' + currentBook.title + '" saved to your sheet!', 'success');
+    document.getElementById('result-card').classList.remove('show');
+    document.getElementById('isbn-input').value = '';
+    currentBook = null;
+
+    btn.disabled = false;
+    btn.textContent = '＋ Add to Google Sheet';
+  }
+
+  function updateRecentList() {
+    document.getElementById('recent-section').style.display = 'block';
+    document.getElementById('session-count').textContent = sessionBooks.length;
+    document.getElementById('recent-list').innerHTML = sessionBooks.slice(0, 8).map(b => `
+      <div class="recent-item">
+        <div style="min-width:0;">
+          <div class="recent-title">${escHtml(b.title)}</div>
+          <div class="recent-sub">${escHtml(b.author)} · ${escHtml(b.genre)}</div>
+        </div>
+        <div class="level-badge">${escHtml(b.level)}</div>
+      </div>
+    `).join('');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Status ──
+  function showStatus(msg, type) {
+    const el = document.getElementById('status-bar');
+    el.textContent = msg;
+    el.className = 'status-bar ' + type;
+    if (type === 'success') setTimeout(hideStatus, 4000);
+  }
+  function hideStatus() {
+    const el = document.getElementById('status-bar');
+    el.className = 'status-bar';
+  }
+
+  // ── Keyboard ──
+  document.getElementById('isbn-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') lookupISBN();
+  });
+
+  init();
+</script>
+</body>
+</html>
